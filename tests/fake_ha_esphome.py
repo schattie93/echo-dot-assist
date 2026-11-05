@@ -30,7 +30,7 @@ async def main(e):
           and "mic_level" not in by and "noise_reduction" not in by
           and isinstance(by.get("mute"), SwitchInfo) and isinstance(by.get("wake_sound"), SwitchInfo), "settings entities listed: the lean set")
     ps = {x["name"]: x for x in page.state()["settings"]}
-    check((ps["mic_level"]["min"], ps["mic_level"]["max"]) == (-35, -15) and ps["noise_reduction"]["choices"] == ["off", "low", "medium", "high"],
+    check((ps["mic_level"]["min"], ps["mic_level"]["max"]) == (-35, -15) and ps["noise_reduction"]["choices"] == ["off", "low", "medium", "high", "speech"],
           "mic level and noise reduction on the settings page")
     tok = by.get("sendspin_pairing_token")
     check(isinstance(tok, TextSensorInfo) and tok.disabled_by_default and int(tok.entity_category) == 2, "Sendspin pairing token entity: diagnostic, disabled by default")

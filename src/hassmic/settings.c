@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char *const denoise_names[4] = { "Off", "Low", "Medium", "High" };
-static const char *const denoise_values[4] = { "off", "low", "medium", "high" };
+const char *const denoise_names[NDENOISE] = { "Off", "Low", "Medium", "High", "Speech-safe" };
+static const char *const denoise_values[NDENOISE] = { "off", "low", "medium", "high", "speech" };
 static const char *const arb_modes[2] = { "hassmic", "kiosk" };            /* ARB_HASSMIC, ARB_KIOSK */
 static const char *const wake_engines[3] = { "amazon", "microwakeword", "homeassistant" };  /* WAKE_AMAZON, WAKE_MWW, WAKE_HA */
 static const char *const dropin_answers[2] = { "auto", "ask" };          /* dropin_ask() 0, 1 */
@@ -201,7 +201,7 @@ int settings_max(const struct setting *s)
 int settings_choices(const struct setting *s, const char *const **names)
 {
     switch (s - table) {
-    case DENOISE: *names = denoise_values; return 4;
+    case DENOISE: *names = denoise_values; return NDENOISE;
     case BT_LANG:
         for (int i = 0; i < bt_lang_count; i++) bt_lang_codes[i] = bt_langs[i].code;
         *names = bt_lang_codes; return bt_lang_count;
@@ -347,7 +347,7 @@ static int parse(const struct setting *s, const char *v, int *out)
         *out = (int)n; return 0;
     case S_CHOICE:
         for (int i = 0, k = settings_choices(s, &names); i < k; i++) if (!strcasecmp(v, names[i])) { *out = i; return 0; }
-        if (s - table == DENOISE) for (int i = 0; i < 4; i++) if (!strcasecmp(v, denoise_names[i])) { *out = i; return 0; }
+        if (s - table == DENOISE) for (int i = 0; i < NDENOISE; i++) if (!strcasecmp(v, denoise_names[i])) { *out = i; return 0; }
         if (s - table == BT_LANG) for (int i = 0; i < bt_lang_count; i++) if (!strcmp(v, bt_langs[i].name)) { *out = i; return 0; }
         return -1;
     }
@@ -392,7 +392,7 @@ static int load_old(void)
     if (getenv("HASSMIC_SETTINGS")) snprintf(p, sizeof p, "%s", getenv("HASSMIC_SETTINGS"));      /* tests */
     if (!(f = fopen(p, "r"))) return 0;
     if (fscanf(f, "%d %d %f %d %d %d %d %7s %d %d %d %d %d %d %d", &n, &g, &v, &m, &w, &a, &d, l, &fmt, &la, &lb, &sd, &wm, &ws, &uc) >= 5) {
-        if (fmt == 2) { mic_level = g < MICGAIN_LEVEL_MIN ? MICGAIN_LEVEL_MIN : g > MICGAIN_LEVEL_MAX ? MICGAIN_LEVEL_MAX : g; core_mic_denoise(n < 0 ? 0 : n > 3 ? 3 : n); }
+        if (fmt == 2) { mic_level = g < MICGAIN_LEVEL_MIN ? MICGAIN_LEVEL_MIN : g > MICGAIN_LEVEL_MAX ? MICGAIN_LEVEL_MAX : g; core_mic_denoise(n < 0 ? 0 : n > 3 ? 3 : n); }   /* the old file knew the three caps only */
         core_soft_mute(m != 0); core_wake_sound(w != 0); core_bt_announce(a != 0); core_dnd(d != 0);
         for (int i = 0; i < bt_lang_count; i++) if (!strcmp(l, bt_langs[i].code)) bt_lang = i;     /* the code, not the index: the list may grow */
         if (!la) { if (lb >= 0) core_led_brightness(lb); else core_led_auto(0); }  /* ledcontroller started its auto at boot */

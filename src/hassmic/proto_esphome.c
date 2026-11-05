@@ -706,7 +706,7 @@ static void on_setting(unsigned type, const unsigned char *p, const unsigned cha
         else if (f.field == 2 && f.wire == 0) on = f.v != 0;
         else if (f.field == 2 && f.data) pbf_str(&f, opt, sizeof opt);
     }
-    if (type == SELECT_COMMAND && key == KEY_DENOISE) { for (int i = 0; i < 4; i++) if (!strcmp(opt, denoise_names[i])) core_mic_denoise(i); }
+    if (type == SELECT_COMMAND && key == KEY_DENOISE) { for (int i = 0; i < NDENOISE; i++) if (!strcmp(opt, denoise_names[i])) core_mic_denoise(i); }
     else if (type == SELECT_COMMAND && key == KEY_BT_LANG) { for (int i = 0; i < bt_lang_count; i++) if (!strcmp(opt, bt_langs[i].name)) settings_bt_lang_index(i); }
     else if (type == NUMBER_COMMAND && key == KEY_MIC_LEVEL) {
         char v[16], e[80]; int l = num < MICGAIN_LEVEL_MIN ? MICGAIN_LEVEL_MIN : num > MICGAIN_LEVEL_MAX ? MICGAIN_LEVEL_MAX : (int)lroundf(num);

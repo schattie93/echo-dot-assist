@@ -21,7 +21,8 @@ struct setting {
 struct bt_lang { const char *code, *name, *on, *off, *on_any, *off_any; };
 extern const struct bt_lang bt_langs[];
 extern const int bt_lang_count;
-extern const char *const denoise_names[4];      /* "Off", "Low", "Medium", "High": Home Assistant's select */
+#define NDENOISE 5                      /* noise_reduction: off, low, medium, high (caps), speech (speech-safe at medium's): main.c denoise_levels */
+extern const char *const denoise_names[NDENOISE];   /* "Off", "Low", "Medium", "High", "Speech-safe" */
 
 void settings_load(void);               /* state/config, or the older state/settings once; then applied.  Once only */
 void settings_save(void);

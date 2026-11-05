@@ -951,9 +951,14 @@ void core_mic_level(int dbfs)
 
 int core_wake_sound_removal(int set) { if (set >= 0) earsup_enable(set); return earsup_enabled(); }
 
+/* the noise_reduction setting's values (settings.c denoise_values): the cap, and the modes of micdenoise.h.  Speech-safe
+ * runs at Medium's cap: on the 20 sentences of issue #131 it took the floor down by 7.8 dB of Medium's 8.3 and left the
+ * speech within 1.3 dB of untouched in every band, where Medium cost it 4-7 dB over 3 kHz */
+static const struct { int db; unsigned mode; } denoise_levels[NDENOISE] = { { 0, 0 }, { 6, 0 }, { 9, 0 }, { 12, 0 }, { 9, MICDENOISE_SPEECH_SAFE } };
+
 int core_mic_denoise(int set)
 {
-    if (set >= 0 && set != mic_denoise) { mic_denoise = set > 3 ? 3 : set; mic_fresh = 1; }
+    if (set >= 0 && set != mic_denoise) { mic_denoise = set >= NDENOISE ? NDENOISE - 1 : set; mic_fresh = 1; }
     return mic_denoise;
 }
 
@@ -1388,16 +1393,16 @@ static void send_mic(const int16_t *pcm, size_t n, uint64_t at)
 {
     if (mic_fresh) {
         micgain_start(&mic_gain, mono_ms() - last_wake_ms < 3000 ? keyword_db : 1); mic_fresh = 0;
-        static const int denoise_db[] = { 0, 6, 9, 12 };
         fprintf(stderr, "mic gain: talker %.1f dBFS, gain %+.1f dB", micgain_talker_db(&mic_gain), mic_gain.gain_db);
-        if (mic_denoise) fprintf(stderr, ", noise reduction %d dB", denoise_db[mic_denoise]);
+        if (mic_denoise) fprintf(stderr, ", noise reduction %d dB%s", denoise_levels[mic_denoise].db, denoise_levels[mic_denoise].mode & MICDENOISE_SPEECH_SAFE ? " off the speech" : "");
         micend_start(&mic_end, proto->end ? end_mode : MICEND_OFF, micgain_talker_db(&mic_gain), at, ring_speech);
         if (talker_from > at) mic_end.from = talker_from;   /* the wake word sent too: not the request's speech yet */
         mic_gain.talker_min_db = mic_end.mode ? mic_end.talker_db - micend_margin(mic_end.mode) : -1000;   /* nor the gain's */
         if (mic_end.mode) fprintf(stderr, ", end heard here: %s", micend_names[mic_end.mode]);
         fprintf(stderr, "\n");
         if (mic_denoise) {
-            micdenoise_reset(denoise_db[mic_denoise]);
+            micdenoise_mode(denoise_levels[mic_denoise].mode);
+            micdenoise_reset(denoise_levels[mic_denoise].db);
             for (uint64_t i = at > CAP_RATE ? at - CAP_RATE : 0; core_local_wake && i < at; ) {   /* the ring: local wake word only */
                 size_t o = i % RING_SAMPLES, k = at - i;
                 if (k > RING_SAMPLES - o) k = RING_SAMPLES - o;
