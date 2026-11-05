@@ -2,6 +2,18 @@
 
 What changed for people using the Echo, newest first. Details and measurements are in [PLAN.md](PLAN.md).
 
+## 2026-11-05
+
+- **Noise reduction gets a "Speech-safe" strength.** Low, medium and high take the background down between the words
+  and inside them alike, and inside them they also take the quiet consonants and everything above 3 kHz: measured on
+  20 sentences in one kitchen (issue #131, by a user with his own Whisper fine-tune and with Home Assistant Cloud
+  speech-to-text), medium got 8 of them right where off got 13. Speech-safe follows RNNoise's own judgement of
+  whether a moment holds speech: between the words the noise goes down by medium's 9 dB, inside them the sound stays
+  as it came (within about 1 dB, measured on those sentences), with a short hold over the ends of words so that a
+  trailing "s" or "t" is not taken for noise. On the same sentences run through it offline, 13 of 20 came out right
+  against 12 untouched and 11 with medium; on silence it invents nothing. Off stays the default: speech-to-text does
+  its own noise handling, and on a quiet room nothing is gained. The strengths keep their names and numbers.
+
 ## 2026-10-29
 
 - **The Echo now finds where the wake word ends by its sounds** (issues #72, #79). Amazon's engine says "heard"

@@ -18,7 +18,11 @@
  * - MICDENOISE_SPEECH_SAFE: the cap follows RNNoise's own speech probability.  A frame it hears speech in gets 1 dB
  *   (SPEECH_CAP_DB), the first one at once (the probability belongs to the frame RNNoise is given, its output is the
  *   frame before: a frame of look-ahead, so the onset is kept), and the cap only climbs back after HOLD frames without
- *   speech, RELEASE_DB a frame: RNNoise's VAD sits low on fricatives and word ends, which must not be gated.  The mix
+ *   speech, RELEASE_DB a frame: RNNoise's VAD sits low on fricatives and word ends, which must not be gated (on the
+ *   issue's 20 sentences 24 % of the loud speech frames are under 0.5, 17 % under 0.3, and those frames carry 5-10 dB
+ *   more of their energy over 4 kHz than the rest: the consonants).  With the threshold at 0.3 and 150 ms of hold the
+ *   cap inside loud speech frames averages 1.3 dB (4 % of them over 3 dB) and outside speech 7.5 of the 9; at 0.5 it
+ *   was 1.5 dB and 6 %, with less of a difference outside (1.9 % of the frames outside speech are over 0.5).  The mix
  *   ramps across each frame between the last keep and this one, so the cap never steps.
  * - MICDENOISE_BAND: only the difference RNNoise makes (its output minus the input of the same moment, capped as above)
  *   goes through the resampler down, then through a 3 kHz low-pass (XO_TAPS, Blackman: -6 dB at 3 kHz, through below

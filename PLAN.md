@@ -1009,7 +1009,40 @@ Run in this order. Each step says what it proves.
       the same level. With the gain behind it: pauses -33 -> -50 dBFS, speech -27.7 -> -30.1 dBFS (both files in
       `device-logs/denoise/`). CPU: 11 ms per second of audio on the PC, 2755 ms for 15.1 s on the Echo (18 % of one
       A35 core, only while a pipeline runs). Binary +41 kB. `tests/unit/micdenoise_test.c`, switch and stream in
-      `fake_ha_esphome.py`. Not done: what STT makes of it (the reason to have it), a listening test
+      `fake_ha_esphome.py`. Not done: a listening test. What STT makes of it: see "Noise reduction and STT".
+- [~] Noise reduction and STT (2026-11-05, issue #131, user schattie93's measurement on his Echo Dot 2, one speaker, one
+      kitchen, 20 sentences never in his training set, exact-match sentences): Medium -> Off took his Whisper fine-tune
+      (large-v3-turbo, whisper.cpp) from 8 to 13 of 20, Home Assistant Cloud STT from 8 to 11, the unmodified primeline
+      turbo from 3 to 5; his signal metrics: speech 4-8 kHz 6-9 dB down with Medium, consonant bursts over 5.5 kHz
+      gone, the floor 11 dB lower, speech level the same. So the per-band gains cost more than the noise did, in a
+      room with a 22 dB SNR to start with. Reworked offline, on the recordings Home Assistant kept (`tools/denoise-file`,
+      the device's own `micdenoise.c` on a WAV, warm-up from the file's tail, lead-in zeros kept, output lined up):
+      - Plain Medium on the 20 Off recordings reproduces the spectrum of his real Medium recordings: speech 3-7 kHz
+        -4.1..-7.1 dB (real -6.4..-8.5), 7-8 kHz -10.5 (real -10.8, the resampler's low-pass), floor -8.3 in every band
+        (real -8..-12; the gain behind it on the device adds its 2 dB, offline there is none: under 3 kHz speech is -2 dB
+        offline, 0 real). Input level makes no difference (the same at -20, -30, -40 dB: the damage is the mechanism).
+      - Variants on the same 20, through the same STT (turbo fine-tune v4 q8, beam 3, his `nr_messen.py`; untouched
+        twice gave 12 and 13 of 20, so one sentence is run-to-run noise): untouched 12, Medium 11, speech-safe 13,
+        band-limited (reduction below 3 kHz only, `MICDENOISE_BAND`) 9, cap 3 dB 12, speech-safe + band 12. 7 everyday
+        Off commands of the same day: 6 of 7 with every one. 30 synthetic silence clips (white, brown, hum): no text
+        invented with any. Offline Medium loses one sentence, not five: the gain after RNNoise, the room of the
+        moment, or the speaker's three hours between the two sessions make up the rest, which this file-based run cannot
+        hold; the device test with speech-safe is what decides (pending, same 20 sentences again).
+      - Speech-safe (`MICDENOISE_SPEECH_SAFE`): the cap follows RNNoise's speech probability, 1 dB in a speech frame
+        (its probability belongs to the frame given, the output is the frame before: one frame of look-ahead), 150 ms
+        of hold after the last one (RNNoise's VAD sits low on fricatives: 24 % of the loud speech frames of those
+        sentences are under 0.5, 17 % under 0.3, and those carry 5-10 dB more of their energy over 4 kHz than the rest),
+        then 1 dB a frame back up; the mix ramps across each frame. Threshold 0.3 against 0.5: the cap inside loud
+        speech frames 1.33 against 1.47 dB on average, 4.3 % against 6.1 % of them over 3 dB, outside speech 7.5
+        against 7.8 dB of the 9 (outside speech 1.9 % of the frames are over 0.5). Signal on the 20: speech -0.8..-1.3 dB
+        in every band to 7 kHz, floor -7.8 dB. Band-limited leaves everything over 3 kHz untouched (-0.1 dB) but STT
+        liked it least (3 sentences lost: a plural, a consonant, a verb), so it stays a mode of the code, not a setting.
+        Setting value "speech" ("Speech-safe" on the page), Medium's cap. Default stays Off: the whole measurement
+        says STT fares best with the least done to the signal in a room this quiet (SNR 22 dB), and Whisper and the
+        cloud engines bring their own noise handling.
+      Not done: the device test (NR speech-safe, the 20 sentences again), a noisy room where any of this helps, Anna's
+      voice (the 20 sentences by the second speaker exist with Medium only), the CPU cost of the band mode's second
+      filter on the Echo (unused as a setting).
 - [~] Wake word in the request (2026-10-28, setting `wake_word_in_request`, off by default; asked for with #66/#72): the
       replay from 100 ms ahead of the keyword's begin (`replay_whole`: the pipeline's `from` is the last detection's
       `kw_end`; `kw_begin` from Pryon's beginSampleIndex, mww's end - 1 s, the PC's SIGUSR1 0.6 s back). Pryon's begin

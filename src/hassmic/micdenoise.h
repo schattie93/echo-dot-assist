@@ -7,8 +7,9 @@
  *
  * What it costs speech (issue #131, measured on 20 sentences of one speaker in one kitchen, Medium against Off, every
  * STT engine tried): RNNoise's per-band gains take the quiet consonants and everything over 3.5 kHz with the noise,
- * and exact sentences fell from 13 to 8 of 20 with the project's Whisper fine-tune, from 11 to 8 with Home Assistant
- * Cloud STT.  Hence the modes below, which keep the reduction away from speech. */
+ * and exact sentences fell from 13 to 8 of 20 with the user's Whisper fine-tune, from 11 to 8 with Home Assistant
+ * Cloud STT.  Hence the modes below, which keep the reduction away from the speech (PLAN.md "Noise reduction and
+ * STT" has the offline measurement of each). */
 #ifndef MICDENOISE_H
 #define MICDENOISE_H
 #include <stddef.h>
@@ -17,8 +18,11 @@
 #define MICDENOISE_FRAME 160            /* 10 ms at 16 kHz: what goes in comes out in blocks of this */
 
 /* Modes (micdenoise_mode), any combination; 0 is the reduction as it was: the cap in every frame, in every band. */
-#define MICDENOISE_SPEECH_SAFE 1        /* the cap only in frames RNNoise hears no speech in (its VAD); 1 dB while it does */
-#define MICDENOISE_BAND 2               /* the reduction only below 3 kHz: the consonants above pass as they came */
+#define MICDENOISE_SPEECH_SAFE 1        /* the cap only in frames RNNoise hears no speech in (its VAD); 1 dB while it does.
+                                         * The setting "speech": on the 20 sentences speech within 1.3 dB of untouched in
+                                         * every band, the floor 7.8 dB down, 13 of 20 right against 12 untouched */
+#define MICDENOISE_BAND 2               /* the reduction only below 3 kHz: the consonants above pass as they came.  Not a
+                                         * setting: STT liked it least of the variants (9 of 20), the mode stays for trials */
 
 /* The delay from input to output, in samples: the two resampling filters and RNNoise's frame, plus the crossover's in
  * MICDENOISE_BAND.  tests and tools line the two up by it. */
