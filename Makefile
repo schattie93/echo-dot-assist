@@ -212,7 +212,12 @@ $(OUT)/hassmic-qemu: $(HASSMIC) $(BOARD) src/hassmic/audio_file.c $(WAKE) $(SOUN
 	@mkdir -p $(OUT)
 	$(CC) $(CFLAGS) -Isrc/hassmic $(filter %.c,$^) -o $@ $(LDFLAGS) -lm -ldl $(call STOCK_LIBS,libpryon.so libopus.so libz.so)
 
-host: build/hassmic-host $(OUT)/hassmic-qemu build/otatool-host
+# the noise reduction on a WAV file (issue #131: strengths and modes judged on kept recordings)
+build/denoise-file: src/tools/denoise-file.c src/hassmic/micdenoise.c src/hassmic/micdenoise.h $(RNNOISE)
+	@mkdir -p build
+	cc -O2 -Wall -Wextra -Isrc/hassmic $(filter %.c,$^) -lm -o $@
+
+host: build/hassmic-host $(OUT)/hassmic-qemu build/otatool-host build/denoise-file
 
 # Building blocks of the Sendspin client, checked against reference implementations (aiohttp, python noiseprotocol).
 UNIT := src/hassmic/hash.c src/hassmic/ws.c src/hassmic/net.c src/hassmic/noise.c src/third_party/monocypher.c
