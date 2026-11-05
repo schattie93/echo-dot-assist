@@ -2,7 +2,7 @@
 
 **Device / setup**
 - Echo Dot 2 (2016), fork `schattie93/echo-dot-assist`, Home Assistant Assist pipeline, "Wake word in the request" on.
-- STT under test: our own Whisper fine-tune (large-v3-turbo, ACFT + LoRA, served by whisper.cpp with short audio context), plus two unmodified controls: `primeline/whisper-large-v3-turbo-german` (whisper.cpp) and `faster-whisper large-v3` (int8). Amazon's cloud STT (HA Cloud) is shown as a third reference where we have it.
+- STT under test: our own Whisper fine-tune (large-v3-turbo, ACFT + LoRA, served by whisper.cpp with short audio context), plus two unmodified controls: `primeline/whisper-large-v3-turbo-german` (whisper.cpp) and `faster-whisper large-v3` (int8). Home Assistant Cloud STT (Nabu Casa) is shown as a third reference where we have it.
 - Noise reduction in the app was set to **Medium** (RNNoise, 9 dB cap) from 02 Nov; **Off** from 05 Nov 14:29. Mic level unchanged throughout. Same kitchen, same Dot position, same speakers.
 
 This is a report of measurements, not a request. The STT effect of the RNNoise stage is listed as unmeasured in `PLAN.md` ("Not done: what STT makes of it (the reason to have it)", `PLAN.md:1012`; "Not done: a case where STT fails without noise reduction and succeeds with it", `PLAN.md:1318`) – below is that measurement, for our room and speakers.
@@ -44,9 +44,9 @@ Speaker C repeated his 20 sentences three hours later with noise reduction Off; 
 | our fine-tune, turbo v3 | 8/20 | **11/20** |
 | our fine-tune, turbo v4 | 8/20 | **13/20** |
 | primeline turbo-german (unmodified) | 3/20 | 5/20 |
-| Amazon cloud STT (HA Cloud) | 8/20 | 11/20 |
+| Home Assistant Cloud STT (Nabu Casa) | 8/20 | 11/20 |
 
-Every recognizer gains, including Amazon's, which rules out our fine-tune as the cause. Signal with Off: speech spectrum above 3.5 kHz +8 dB (now level with the laptop), noise floor −48 dBFS (the −59 dBFS with Medium was the gate, not real quiet), speech level unchanged (−25 dBFS). The remaining gap to the laptop (13/20 vs 17/20 for v4) is mostly long free-form questions.
+Every recognizer gains, including Home Assistant Cloud STT, which rules out our fine-tune as the cause. Signal with Off: speech spectrum above 3.5 kHz +8 dB (now level with the laptop), noise floor −48 dBFS (the −59 dBFS with Medium was the gate, not real quiet), speech level unchanged (−25 dBFS). The remaining gap to the laptop (13/20 vs 17/20 for v4) is mostly long free-form questions.
 
 Per-sentence outputs for all models and both settings, the per-file signal metrics and the measurement script are in my fork: [docs/measurements/rnnoise-stt](https://github.com/schattie93/echo-dot-assist/tree/docs/rnnoise-stt-measurement/docs/measurements/rnnoise-stt) (`sternchen_off_ergebnisse.csv`, `signal_vergleich.csv`, `signal_vergleich_off.csv`, `signal_vergleich.py`; mean speech spectra Medium/Off/laptop in `spektrum_off.png`).
 
