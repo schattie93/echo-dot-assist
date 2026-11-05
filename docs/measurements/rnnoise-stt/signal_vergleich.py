@@ -156,7 +156,7 @@ def med(q, sp, k):
 print("Median je Quelle (alle 40 / Anna 20 / Christoph 20):")
 print(f"{'Kennzahl':42s} {'Dot':>8s} {'Handy':>8s} | {'Dot A':>7s} {'Handy A':>7s} | {'Dot C':>7s} {'Handy C':>7s}")
 for k in felder:
-    print(f"{k:42s} {med('dot',None,k):8.2f} {med('handy',None,k):8.2f} | {med('dot','anna',k):7.2f} {med('handy','anna',k):7.2f} | {med('dot','christoph',k):7.2f} {med('handy','christoph',k):7.2f}")
+    print(f"{k:42s} {med('dot',None,k):8.2f} {med('handy',None,k):8.2f} | {med('dot','A',k):7.2f} {med('handy','A',k):7.2f} | {med('dot','C',k):7.2f} {med('handy','C',k):7.2f}")
 
 # Paartabelle Markdown
 with open(OUT / "paare.md", "w", encoding="utf-8") as fh:
@@ -190,7 +190,7 @@ def spektrogramm(ax, x, titel):
     f, t, Z = stft(x, SR, nperseg=512, noverlap=384)
     ax.pcolormesh(t, f, 20 * np.log10(np.abs(Z) + 1e-6), vmin=-100, vmax=-20, cmap="magma", shading="auto")
     ax.set_title(titel, fontsize=9); ax.set_ylim(0, 8000)
-auswahl = [("anna", 16), ("christoph", 16), ("anna", 3)]  # Hauptstadt von Portugal (A, C), Rollladen im Bad (A)
+auswahl = [("A", 16), ("C", 16), ("A", 3)]  # Hauptstadt von Portugal (A, C), Rollladen im Bad (A)
 if len(sys.argv) > 1: auswahl = [(a.split(":")[0], int(a.split(":")[1])) for a in sys.argv[1:]]
 for sp, nr in auswahl:
     sp_, nr_, text, pd_, ph = next(p for p in paare if p[0] == sp and p[1] == nr)
