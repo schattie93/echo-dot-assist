@@ -2,6 +2,12 @@
 
 What changed for people using the Echo, newest first. Details and measurements are in [PLAN.md](PLAN.md).
 
+## 2026-11-25 — The log, copied to a collector on the LAN
+
+- An Echo built with `LOG_UDP=<IPv4>:<port>` (or started with `HASSMIC_LOG_UDP`) sends each line of hassmic's log as a
+  UDP datagram to that address too, as it writes it to `boot.log`. Private and sealed lines (what was said, names,
+  codes) are never sent. Nothing is sent when it is not set, which is the default.
+
 ## 2026-11-25 — Kiosk arbitration: our own music no longer counts as room noise
 
 - In Kiosk Satellite mode the Echo's loudness score is the wake word over the room's floor. Music playing on the Echo

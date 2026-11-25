@@ -53,6 +53,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/prctl.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -355,6 +358,31 @@ static size_t mark_begun(const char *t, size_t n)
         for (size_t l = strlen(marks[k]) - 1; l > best; l--) if (l <= n && !memcmp(t + n - l, marks[k], l)) { best = l; break; }
     return best;
 }
+/* A copy of each line to a log collector on the LAN (UDP, one datagram a line), for an owner who keeps the Echo's log
+ * beside his other devices' instead of fetching it from the settings page.  HASSMIC_LOG_UDP=<IPv4>:<port>, else the
+ * build's LOG_UDP (Makefile; empty: none).  Never a private or sealed line (logread.h: what was said, names, codes):
+ * those stay in boot.log, where the page's own rules apply.  Fire and forget: MSG_DONTWAIT, a lost datagram is a lost
+ * copy, boot.log keeps the line; a plain socket, so the egress lock lets it reach local addresses only. */
+#ifndef LOG_UDP
+#define LOG_UDP ""
+#endif
+static int udp_fd = -1;
+static struct sockaddr_in udp_to;
+static void udp_open(void)
+{
+    const char *e = getenv("HASSMIC_LOG_UDP"); char host[64]; unsigned port = 0;
+    if (!e || !*e) e = LOG_UDP;
+    if (!*e || sscanf(e, "%63[0-9.]:%u", host, &port) != 2 || !port || port > 65535) return;
+    memset(&udp_to, 0, sizeof udp_to); udp_to.sin_family = AF_INET; udp_to.sin_port = htons((unsigned short)port);
+    if (inet_pton(AF_INET, host, &udp_to.sin_addr) != 1) return;
+    udp_fd = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+}
+static void udp_line(const char *line, size_t n, size_t pre)
+{
+    if (udp_fd < 0) return;
+    if (!strncmp(line + pre, LOG_PRIVATE_MARK, strlen(LOG_PRIVATE_MARK)) || !strncmp(line + pre, LOG_SEALED_MARK, strlen(LOG_SEALED_MARK))) return;
+    sendto(udp_fd, line, n, MSG_DONTWAIT, (const struct sockaddr *)&udp_to, sizeof udp_to);
+}
 static void forward(int in, int out)
 {
     char buf[4096], line[2048 + 40], held[16]; size_t n = 0, pre = 0, nheld = 0; int noise = 0; const char *carry = NULL;
@@ -380,7 +408,7 @@ static void forward(int in, int out)
             if (!strcmp(line + pre, idme_noise[noise])) noise = (noise + 1) % 3;
             else if (!noise && !strcmp(line + pre, idme_noise[1])) noise = 2;
             else if (dha_noise(line + pre)) noise = 0;
-            else { noise = 0; line[n++] = '\n'; put_all(out, line, n); }
+            else { noise = 0; line[n++] = '\n'; put_all(out, line, n); udp_line(line, n, pre); }
             n = 0;
         }
     }
@@ -405,6 +433,7 @@ void clock_log_start(void)
          * process, which outlives hassmic on purpose */
         { const char *e = getenv("HASSMIC_PLUGIN_FD"); if (e && atoi(e) > 2) close(atoi(e)); }
         close(p[1]);
+        udp_open();
         forward(p[0], out);
         _exit(0);
     }

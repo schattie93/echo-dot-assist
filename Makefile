@@ -133,10 +133,12 @@ endif
 # How the model's system install writes its SELinux policy (device.conf INSTALL): the Plugins page's warning names the
 # way to run it again (web.c /api/plugins "install_method", docs/plugins.md 2.7)
 INSTALL_METHOD := $(shell sed -n 's/^INSTALL=\([a-z0-9-]*\).*/\1/p' devices/$(DEVICE)/device.conf 2>/dev/null)
+# a copy of the log to a collector on the LAN (clock.c udp_open: <IPv4>:<port>; empty: none; HASSMIC_LOG_UDP overrides)
+LOG_UDP ?=
 DEFS    := -DVERSION='"$(VERSION)"' -DBUILD='"$(BUILD)"' -DBUILD_TIME='"$(BUILD_TIME)"' -DREPO='"$(UPDATE_REPO)"' \
            -DPLUGIN_INDEX='"$(PLUGIN_INDEX)"' -DPLUGINS_PUB='"$(PLUGINS_PUB_HEX)"' -DPLUGINS_PUB2='"$(PLUGINS_PUB2_HEX)"' -DPLUGINS_LEAST_INDEX=$(PLUGINS_LEAST_INDEX)LL \
            -DPLUGINS_LEAST_REVOKED=$(PLUGINS_LEAST_REVOKED)LL -DBUILD_EPOCH=$(BUILD_EPOCH)LL $(if $(RELEASE),-DRELEASE) \
-           -DINSTALL_METHOD='"$(INSTALL_METHOD)"'
+           -DINSTALL_METHOD='"$(INSTALL_METHOD)"' -DLOG_UDP='"$(LOG_UDP)"'
 # sdk/: the plugins' wire format (plugmsg.h), the same file their client library has
 CFLAGS  := -O2 -Wall -Wextra -fPIE -Isrc/include -Isdk $(DEFS)
 LDFLAGS := -pie -fuse-ld=lld -Wl,--allow-shlib-undefined -Wl,--unresolved-symbols=ignore-in-shared-libs
