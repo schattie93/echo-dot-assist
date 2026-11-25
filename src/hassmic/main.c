@@ -2010,6 +2010,21 @@ static int kiosk_score(uint64_t end, int simulated)
     qsort(s, NF, sizeof s[0], cmp_desc);
     floor_ = s[NF - 1 - NF / 5];                        /* sorted loudest first: a fifth of the frames are quieter */
     if (floor_ < -75) floor_ = -75;
+    /* Our own playback is room to this measure: music on the Echo lifted its floor from -47 to -31.5 dBFS (micAsr,
+     * Echo Dot 2, 2026-11-25), and a talker 30 cm away scored 16.6 dB against a ReSpeaker 4 m off at 18.9, whose own
+     * music its echo canceller takes out before it measures.  So while we play, or did in the last 3 s, the floor is
+     * the room's as last measured without our sound (if from the last 30 min), never higher than now. */
+    {
+        static double quiet_floor; static long long quiet_ms;
+        long long now = mono_ms();
+        int own = atomic_load(&music_on) != 0 || atomic_load(&tts_on) || atomic_load(&alarm_on) || now - atomic_load(&own_sound_ms) < 3000;
+        if (!own) { quiet_floor = floor_; quiet_ms = now; }
+        else if (quiet_ms && now - quiet_ms < 30 * 60 * 1000LL && quiet_floor < floor_) {
+            fprintf(stderr, "wake: kiosk score: room %.1f dBFS while we play, taken as %.1f (without our sound, %llds ago)\n",
+                    floor_, quiet_floor, (now - quiet_ms) / 1000);
+            floor_ = quiet_floor;
+        }
+    }
     fprintf(stderr, "wake: kiosk score: wake word %.1f dBFS over room %.1f dBFS (both +%d dB)\n", speech, floor_, KIOSK_LIFT_DB);
     return (int)lround((speech - floor_) * 100);
 }

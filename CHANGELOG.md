@@ -2,6 +2,13 @@
 
 What changed for people using the Echo, newest first. Details and measurements are in [PLAN.md](PLAN.md).
 
+## 2026-11-25 — Kiosk arbitration: our own music no longer counts as room noise
+
+- In Kiosk Satellite mode the Echo's loudness score is the wake word over the room's floor. Music playing on the Echo
+  itself lifted that floor (on an Echo Dot 2 from -47 to -31.5 dBFS) and the Echo lost rounds to a satellite four metres
+  away while the talker stood next to it. While the Echo plays, or did in the last 3 s, the floor is now the room's as
+  last measured without its own sound (from the last 30 minutes), never higher than the current one. The log says when.
+
 ## 2026-11-25 — Echo Show: Screen off stays off, motion with Wyoming too
 
 - **Screen off from the drawer now stays off** with **Motion wakes the screen** on: someone moving no longer turns it
