@@ -1636,6 +1636,22 @@ static void quiet_cancel(void)
     quiet_abort = 1;
 }
 
+/* Capture thread, lock not held.  A round lost while a run of ours still listens or thinks: that run is cancelled
+ * quietly, as the button does (quiet_cancel).  A wake word said again means the first got no answer; the round gave
+ * the new one to another device, and ours would answer too, late, on what it heard.  Seen 26.11.2026 05:55: the first
+ * "Alexa" won here at 9.4 dB against 6.0, the command reached this Echo at -76.5 dBFS (the talker was far off); the
+ * second, 10 s later, went to the ReSpeaker (16.2 dB against 11.5) while this run went on listening and spoke 17 s
+ * after it, on nothing.  A reply being spoken (SPEAKING) is left alone: nothing is cut mid-sentence */
+static void lost_cancel(void)
+{
+    pthread_mutex_lock(&core_lock);
+    if ((state == LISTENING || state == THINKING) && connected && proto->cancel) {
+        fprintf(stderr, "arbitration: lost while a run of ours %s, run cancelled\n", state == LISTENING ? "listens" : "thinks");
+        quiet_cancel();
+    }
+    pthread_mutex_unlock(&core_lock);
+}
+
 /* Lock held.  The wake word just heard has had its "stop".  4 s: the engine reports "stop" only in the ~2 s after the
  * wake word, and a round adds at most 1 s */
 static int stop_heard(void) { return heard_ms && stop_ms >= heard_ms && stop_ms - heard_ms < 4000; }
@@ -4337,7 +4353,7 @@ static void *capture_thread(void *arg)
         }
         if (score_due) score_wait();
         afe_late_check();
-        if (arb_due && (mono_ms() >= arb_due || arb_settled())) { arb_due = 0; if (arb_decide()) answer(arb_from, 1); else { afe_done(); wake_tell("answered_elsewhere"); } }    /* after this block went out live */
+        if (arb_due && (mono_ms() >= arb_due || arb_settled())) { arb_due = 0; if (arb_decide()) answer(arb_from, 1); else { afe_done(); lost_cancel(); wake_tell("answered_elsewhere"); } }    /* after this block went out live */
 
         pthread_mutex_lock(&core_lock);
         if ((state == LISTENING || state == THINKING) && time(NULL) - state_since > PIPELINE_TIMEOUT) {

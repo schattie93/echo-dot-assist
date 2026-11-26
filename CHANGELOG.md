@@ -2,6 +2,12 @@
 
 What changed for people using the Echo, newest first. Details and measurements are in [PLAN.md](PLAN.md).
 
+## 2026-11-26 — A lost wake word round ends the run still listening
+
+- When "Alexa" is said again while this Echo still listens or thinks on an earlier request, and the new round goes to
+  another device, this Echo now drops its earlier run quietly (as the action button does). Before, it went on and
+  answered late, on what it had heard, next to the device that won. A reply already being spoken is not cut.
+
 ## 2026-11-25 — The log, copied to a collector on the LAN
 
 - An Echo built with `LOG_UDP=<IPv4>:<port>` (or started with `HASSMIC_LOG_UDP`) sends each line of hassmic's log as a
